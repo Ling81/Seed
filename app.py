@@ -1,6 +1,6 @@
+import streamlit as st
 import pandas as pd
 import os
-import streamlit as st
 
 # Function to save session data to a CSV file
 def save_data_to_csv(data, filename="session_data.csv"):
@@ -14,34 +14,30 @@ def save_data_to_csv(data, filename="session_data.csv"):
 
     st.success("✅ Data saved successfully!")
 
-# App title
-st.set_page_config(page_title="Therapist Data Collection Tool", layout="wide")
+# Sidebar for navigation
+st.sidebar.header("Session Details")
 
-# Sidebar navigation
-st.sidebar.title("Navigation")
-section = st.sidebar.radio("Go to", ["Session Details", "Cold Probe Data", "Trial-by-Trial Data",
-                                     "Task Analysis", "Behavior Duration Tracking", "Progress & Reports"])
+# Therapist inputs session details
+date = st.date_input("Date", value=pd.Timestamp.today().date())
+therapist_name = st.text_input("Therapist’s Name")
 
-# Initialize session state variables if they don't exist
-if "session_data" not in st.session_state:
-    st.session_state.session_data = {}
+# Define available time slots from 9:00 AM to 5:30 PM
+time_slots = [
+    "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
+    "12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM", "2:00 PM", "2:30 PM",
+    "3:00 PM", "3:30 PM", "4:00 PM", "4:30 PM", "5:00 PM", "5:30 PM"
+]
 
-# ----------------------------- 1️⃣ SESSION DETAILS -----------------------------
-if section == "Session Details":
-    st.title("📌 Session Details")
+# Dropdown for Start and End time selection
+start_time = st.selectbox("Start Time", time_slots, index=0)  # Default: 9:00 AM
+end_time = st.selectbox("End Time", time_slots, index=len(time_slots) - 1)  # Default: 5:30 PM
 
-    # Input fields
-    date = st.date_input("Session Date")
-    start_time = st.time_input("Start Time")
-    end_time = st.time_input("End Time")
-    day_of_session = st.selectbox("Day of Session", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])
-    therapist_name = st.text_input("Therapist Name", placeholder="Enter your name")
-
+# Save button
 if st.button("💾 Save Session Details"):
     session_data = {
         "Date": date,
-        "Time Start": start_time,
-        "Time End": end_time,
+        "Start Time": start_time,
+        "End Time": end_time,
         "Therapist": therapist_name,
     }
     save_data_to_csv(session_data)
