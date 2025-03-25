@@ -43,7 +43,7 @@ if section == "Session Details":
         "Time Start": start_time,
         "Time End": end_time,
         "Therapist": therapist_name,
-    }
+    
     save_data_to_csv(session_data)
 
 # ----------------------------- 2️⃣ COLD PROBE DATA -----------------------------
