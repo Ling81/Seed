@@ -100,4 +100,5 @@ elif section == "Behavior Duration":
         if st.session_state.start_time:
             duration = (datetime.datetime.now() - st.session_state.start_time).total_seconds()
             st.session_state.total_duration += duration
-            st.write(f"🕒
+            st.write(f"🕒 **Episode Duration:** {round(duration, 2)} seconds")
+
