@@ -30,13 +30,8 @@ if menu == "Session Details":
     date = st.date_input("Date", value=pd.Timestamp.today().date())
     therapist_name = st.text_input("Therapist’s Name")
 
-    # Define available time slots from 9:00 AM to 5:30 PM
-    time_slots = [
-        "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
-        "12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM", "2:00 PM", "2:30 PM",
-        "3:00 PM", "3:30 PM", "4:00 PM", "4:30 PM", "5:00 PM", "5:30 PM"
-    ]
-
+    # Time slots from 9:00 AM to 5:30 PM
+    time_slots = [f"{h}:{m:02d} {'AM' if h < 12 else 'PM'}" for h in range(9, 18) for m in (0, 30)]
     start_time = st.selectbox("Start Time", time_slots, index=0)
     end_time = st.selectbox("End Time", time_slots, index=len(time_slots) - 1)
 
@@ -64,7 +59,7 @@ elif menu == "Cold Probe Data":
     if st.button("💾 Save Cold Probe Data"):
         save_data_to_csv(response_data)
 
-# 3️⃣ Trial-by-Trial Data
+# 3️⃣ Trial-by-Trial Data (Improved Layout)
 elif menu == "Trial-by-Trial Data":
     st.header("🎯 Trial-by-Trial Data")
 
@@ -72,12 +67,36 @@ elif menu == "Trial-by-Trial Data":
     trial_options = ["+", "p", "-", "I"]
     trial_data = {}
 
+    if len(targets) > 10:
+        st.warning("⚠ Only the first 10 targets will be used.")
+
+    trial_results = []
+
+    # Display the trial data in a structured table
+    col1, col2 = st.columns([1, 3])
+    col1.write("**Target**")
+    col2.write("**Trials**")
+
     for target in targets[:10]:  # Limit to 10 targets
-        trials = []
+        trial_row = []
+        col1, col2 = st.columns([1, 3])
+        col1.write(target.strip())
+
         for i in range(10):  # 10 trials per target
-            trial = st.selectbox(f"{target.strip()} - Trial {i+1}", trial_options, key=f"{target}_T{i}")
-            trials.append(trial)
-        trial_data[target] = trials
+            trial = col2.selectbox(f"Trial {i+1} for {target.strip()}", trial_options, key=f"{target}_T{i}")
+            trial_row.append(trial)
+
+        trial_data[target] = trial_row
+
+        # Calculate percentage of correct responses
+        correct_count = sum(1 for t in trial_row if t == "+")
+        total_trials = len(trial_row)
+        percentage = (correct_count / total_trials) * 100 if total_trials > 0 else 0
+        trial_results.append({"Target": target.strip(), "Correct %": percentage})
+
+    # Show percentage summary
+    df_results = pd.DataFrame(trial_results)
+    st.table(df_results)
 
     if st.button("💾 Save Trial-by-Trial Data"):
         save_data_to_csv(trial_data)
@@ -156,10 +175,5 @@ elif menu == "Progress & Reports":
             **Start Time:** {latest_session['Start Time']}
             **End Time:** {latest_session['End Time']}
             **Total Duration Tracked:** {latest_session.get('Total Duration (s)', 'N/A')} seconds
-
-            **Session Summary:**  
-            - Trial-by-Trial & Cold Probe data saved  
-            - Behavior duration tracked  
-            - Progress recorded  
             """
             st.markdown(session_notes)
