@@ -1,145 +1,139 @@
 import streamlit as st
 import pandas as pd
+import time
 import matplotlib.pyplot as plt
-import datetime
 
-# Initialize session state variables
-if "date" not in st.session_state:
-    st.session_state.date = datetime.date.today()
-if "therapist" not in st.session_state:
-    st.session_state.therapist = ""
-if "start_time" not in st.session_state:
-    st.session_state.start_time = None
-if "end_time" not in st.session_state:
-    st.session_state.end_time = None
-if "total_duration" not in st.session_state:
-    st.session_state.total_duration = 0
-if "trial_data" not in st.session_state:
-    st.session_state.trial_data = pd.DataFrame(columns=["Domain", "Target", "Trial 1", "Trial 2", "Trial 3", "Accuracy (%)"])
+# App title
+st.set_page_config(page_title="Therapist Data Collection Tool", layout="wide")
 
 # Sidebar navigation
-st.sidebar.title("📊 ABA Data Collection Tool")
-section = st.sidebar.radio("Choose a section:", ["Session Details", "Cold Probe Data", "Trial-by-Trial Data", "Task Analysis", "Behavior Duration", "Progress & Reports"])
+st.sidebar.title("Navigation")
+section = st.sidebar.radio("Go to", ["Session Details", "Cold Probe Data", "Trial-by-Trial Data",
+                                     "Task Analysis", "Behavior Duration Tracking", "Progress & Reports"])
 
-# 1️⃣ **Session Details**
+# ----------------------------- 1️⃣ SESSION DETAILS -----------------------------
 if section == "Session Details":
-    st.header("📅 Session Details")
+    st.title("📌 Session Details")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        st.session_state.date = st.date_input("Select Date", st.session_state.date)
-        st.session_state.therapist = st.text_input("Therapist’s Name", st.session_state.therapist)
+    # Input fields
+    date = st.date_input("Session Date")
+    start_time = st.time_input("Start Time")
+    end_time = st.time_input("End Time")
+    day_of_session = st.selectbox("Day of Session", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])
+    therapist_name = st.text_input("Therapist Name", placeholder="Enter your name")
 
-    with col2:
-        st.session_state.start_time = st.time_input("Start Time", st.session_state.start_time)
-        st.session_state.end_time = st.time_input("End Time", st.session_state.end_time)
+    # Display summary
+    st.write(f"📅 **Date:** {date}, 🕒 **Time:** {start_time} - {end_time}, 📌 **Day:** {day_of_session}, 👩‍⚕️ **Therapist:** {therapist_name}")
 
-    st.write("### ✅ Session Summary")
-    st.json({
-        "Date": str(st.session_state.date),
-        "Therapist": st.session_state.therapist,
-        "Start Time": str(st.session_state.start_time),
-        "End Time": str(st.session_state.end_time)
-    })
-
-# 2️⃣ **Cold Probe Data**
+# ----------------------------- 2️⃣ COLD PROBE DATA -----------------------------
 elif section == "Cold Probe Data":
-    st.header("📌 Cold Probe Data")
+    st.title("📌 Cold Probe Data")
 
-    domains = ["Communication", "Social Skills", "Daily Living", "Academic", "Motor Skills"]
+    # Define domains
+    domains = ["Language", "Social Skills", "Motor Skills"]
+    selected_domain = st.selectbox("Select Domain", domains)
+
+    # Target list for domain
+    targets = ["Target 1", "Target 2", "Target 3"]
+    
+    # Response selection for each target
+    response_data = {}
+    for target in targets:
+        response = st.selectbox(f"{target}", ["Y", "N", "NA"])
+        response_data[target] = response
+    
+    # Display recorded responses
+    st.write("📋 **Recorded Responses:**", response_data)
+
+# ----------------------------- 3️⃣ TRIAL-BY-TRIAL DATA -----------------------------
+elif section == "Trial-by-Trial Data":
+    st.title("📌 Trial-by-Trial Data")
+
+    # Select domain
     selected_domain = st.selectbox("Select Domain", domains)
     
-    st.write(f"**Selected Domain:** {selected_domain}")
-
-    # Example cold probe table
+    # Target selection
     targets = ["Target 1", "Target 2", "Target 3"]
-    responses = {t: st.selectbox(f"{t}:", ["Y", "N", "NA"], key=t) for t in targets}
+    selected_target = st.selectbox("Select Target", targets)
 
-    st.write("✅ **Cold Probe Data Saved!**")
-
-# 3️⃣ **Trial-by-Trial Data**
-elif section == "Trial-by-Trial Data":
-    st.header("🎯 Trial-by-Trial Data")
-
-    domain = st.selectbox("Select Domain", ["Communication", "Social Skills", "Daily Living", "Academic"])
-    target = st.text_input("Enter Target Behavior")
-
-    col1, col2, col3 = st.columns(3)
-    trial_1 = col1.selectbox("Trial 1", ["+", "p", "-", "I"], key="trial_1")
-    trial_2 = col2.selectbox("Trial 2", ["+", "p", "-", "I"], key="trial_2")
-    trial_3 = col3.selectbox("Trial 3", ["+", "p", "-", "I"], key="trial_3")
-
-    if st.button("Save Data"):
-        correct_count = sum([trial_1 == "+", trial_2 == "+", trial_3 == "+"])
-        accuracy = (correct_count / 3) * 100
-
-        new_data = pd.DataFrame({"Domain": [domain], "Target": [target], "Trial 1": [trial_1], "Trial 2": [trial_2], "Trial 3": [trial_3], "Accuracy (%)": [accuracy]})
-        st.session_state.trial_data = pd.concat([st.session_state.trial_data, new_data], ignore_index=True)
-
-    st.dataframe(st.session_state.trial_data)
-
-# 4️⃣ **Task Analysis**
-elif section == "Task Analysis":
-    st.header("📝 Task Analysis")
-
-    steps = ["Step 1", "Step 2", "Step 3"]
-    prompts = ["FP", "PP", "MP", "VI", "VP", "GP", "TD", "I"]
+    # Trial entry and percentage calculation
+    trial_data = []
+    for trial in range(1, 6):
+        response = st.selectbox(f"Trial {trial}", ["+", "p", "-", "I"])
+        trial_data.append(response)
     
-    task_data = {step: st.selectbox(f"{step}:", prompts, key=step) for step in steps}
+    # Calculate percentage of correct responses
+    correct_trials = trial_data.count("+") + trial_data.count("I")
+    accuracy_percentage = (correct_trials / len(trial_data)) * 100
 
-    st.write("✅ **Task Analysis Data Saved!**")
+    # Display results
+    st.write(f"🎯 **Accuracy for {selected_target}:** {accuracy_percentage:.2f}%")
 
-# 5️⃣ **Behavior Duration**
-elif section == "Behavior Duration":
-    st.header("⏳ Behavior Duration Tracking")
+# ----------------------------- 4️⃣ TASK ANALYSIS -----------------------------
+elif section == "Task Analysis":
+    st.title("📌 Task Analysis")
 
+    # Define steps
+    steps = ["Step 1", "Step 2", "Step 3"]
+    step_data = {}
+
+    for step in steps:
+        prompt_level = st.selectbox(f"{step}", ["FP", "PP", "MP", "VI", "VP", "GP", "TD", "I"])
+        step_data[step] = prompt_level
+
+    # Display recorded steps
+    st.write("📋 **Prompt Levels:**", step_data)
+
+# ----------------------------- 5️⃣ BEHAVIOR DURATION TRACKING -----------------------------
+elif section == "Behavior Duration Tracking":
+    st.title("📌 Behavior Duration Tracking")
+
+    if "start_time" not in st.session_state:
+        st.session_state.start_time = None
+        st.session_state.total_duration = 0
+
+    # Timer controls
     if st.button("Start Timer"):
-        st.session_state.start_time = datetime.datetime.now()
+        st.session_state.start_time = time.time()
 
-    if st.button("End Timer"):
+    if st.button("Stop Timer"):
         if st.session_state.start_time:
-            duration = (datetime.datetime.now() - st.session_state.start_time).total_seconds()
-            st.session_state.total_duration += duration
-            st.write(f"🕒 **Episode Duration:** {round(duration, 2)} seconds")
-        else:
-            st.warning("⚠ Start the timer first!")
+            elapsed_time = time.time() - st.session_state.start_time
+            st.session_state.total_duration += elapsed_time
+            st.session_state.start_time = None
 
-    st.write(f"**Total Duration of Behavior:** {round(st.session_state.total_duration, 2)} seconds")
+    # Display total duration
+    st.write(f"⏳ **Total Behavior Duration:** {st.session_state.total_duration:.2f} seconds")
 
-# 6️⃣ **Progress & Reports**
+# ----------------------------- 6️⃣ PROGRESS & REPORTS -----------------------------
 elif section == "Progress & Reports":
-    st.header("📊 Progress & Reports")
+    st.title("📌 Progress & Reports")
 
-    # Retrieve stored session details
-    date = st.session_state.get("date", "N/A")
-    therapist = st.session_state.get("therapist", "N/A")
-    start_time = st.session_state.get("start_time", "N/A")
-    end_time = st.session_state.get("end_time", "N/A")
+    # Placeholder data for cumulative graph
+    dates = pd.date_range(start="2024-01-01", periods=10, freq='D')
+    scores = [50, 55, 60, 65, 70, 75, 78, 80, 85, 90]
 
-    # Generate session notes
-    st.subheader("📄 Auto-Generated Session Notes")
-    session_summary = f"""
-    **Date:** {date}  
-    **Therapist:** {therapist}  
-    **Session Time:** {start_time} - {end_time}  
+    # Plot cumulative graph
+    fig, ax = plt.subplots()
+    ax.plot(dates, scores, marker="o", linestyle="-", color="b")
+    ax.set_title("Cumulative Progress Over Time")
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Score (%)")
+    ax.grid(True)
+    st.pyplot(fig)
 
-    **Cold Probe Data:** Data not yet stored  
-    **Trial-by-Trial Data:** {len(st.session_state.trial_data)} trials recorded  
-    **Task Analysis Data:** Data not yet stored  
-    **Behavior Duration:** {round(st.session_state.get("total_duration", 0), 2)} seconds  
+    # Auto-generated session notes
+    session_notes = f"""
+    📅 **Date:** {date}  
+    🕒 **Time:** {start_time} - {end_time}  
+    📌 **Day:** {day_of_session}  
+    👩‍⚕️ **Therapist:** {therapist_name}  
+
+    🎯 **Cold Probe Summary:** {response_data}  
+    🔄 **Trial-by-Trial Summary:** Accuracy for {selected_target} = {accuracy_percentage:.2f}%  
+    🛠 **Task Analysis Steps:** {step_data}  
+    ⏳ **Total Behavior Duration:** {st.session_state.total_duration:.2f} sec  
     """
-
-    st.text_area("Session Notes", session_summary, height=200)
-    st.download_button("📥 Download Session Notes", session_summary, file_name="session_notes.txt")
-
-    # Generate cumulative graph
-    if not st.session_state.trial_data.empty:
-        st.subheader("📈 Cumulative Progress Graph")
-        fig, ax = plt.subplots()
-        st.session_state.trial_data.plot(kind="line", x="Target", y="Accuracy (%)", ax=ax, marker="o")
-        plt.xticks(rotation=45)
-        plt.ylabel("Accuracy (%)")
-        plt.title("Cumulative Progress Over Time")
-        st.pyplot(fig)
-
+    st.markdown("### 📄 Auto-Generated Session Notes")
+    st.text_area("Session Notes", session_notes, height=150)
 
