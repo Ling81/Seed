@@ -59,7 +59,7 @@ elif section == "Cold Probe Data":
             response = st.selectbox(f"{target}", ["Y", "N", "NA"])
             response_data[target] = response
 
-   if st.button("💾 Save Cold Probe Data"):
+if st.button("💾 Save Cold Probe Data"):
     cold_probe_data = {"Date": date}  # Store session date
     for domain in domains:
         for target in cold_probe_targets[domain]:
@@ -106,7 +106,7 @@ elif section == "Trial-by-Trial Data":
 
             st.write(f"✅ **Accuracy:** {accuracy_percentage:.2f}%")
 
-    if st.button("💾 Save Trial Data"):
+if st.button("💾 Save Trial Data"):
     trial_data = {"Date": date}  # Store session date
     for domain in trial_domains:
         for target in trial_targets[domain]:
@@ -127,7 +127,7 @@ elif section == "Task Analysis":
             prompt_level = st.selectbox(f"{step}", ["FP", "PP", "MP", "VI", "VP", "GP", "TD", "I"])
             step_data[step] = prompt_level
 
-    if st.button("Save Task Analysis"):
+if st.button("Save Task Analysis"):
         st.session_state.session_data["task_analysis"] = step_data
         st.success("Task analysis data saved!")
 
