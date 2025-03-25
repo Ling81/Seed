@@ -1,7 +1,18 @@
-import streamlit as st
 import pandas as pd
-import time
-import matplotlib.pyplot as plt
+import os
+import streamlit as st
+
+# Function to save session data to a CSV file
+def save_data_to_csv(data, filename="session_data.csv"):
+    df = pd.DataFrame([data])  # Convert dictionary to DataFrame
+    
+    # Check if file exists, if yes, append data, else create new file
+    if os.path.exists(filename):
+        df.to_csv(filename, mode='a', header=False, index=False)  # Append data
+    else:
+        df.to_csv(filename, mode='w', header=True, index=False)  # Create new file
+
+    st.success("✅ Data saved successfully!")
 
 # App title
 st.set_page_config(page_title="Therapist Data Collection Tool", layout="wide")
@@ -26,14 +37,14 @@ if section == "Session Details":
     day_of_session = st.selectbox("Day of Session", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])
     therapist_name = st.text_input("Therapist Name", placeholder="Enter your name")
 
-    if st.button("Save Session Details"):
-        st.session_state.session_data["session_details"] = {
-            "Date": date,
-            "Time": f"{start_time} - {end_time}",
-            "Day": day_of_session,
-            "Therapist": therapist_name
-        }
-        st.success("Session details saved!")
+  if st.button("💾 Save Session Details"):
+    session_data = {
+        "Date": date,
+        "Time Start": start_time,
+        "Time End": end_time,
+        "Therapist": therapist_name,
+    }
+    save_data_to_csv(session_data)
 
 # ----------------------------- 2️⃣ COLD PROBE DATA -----------------------------
 elif section == "Cold Probe Data":
@@ -48,9 +59,14 @@ elif section == "Cold Probe Data":
             response = st.selectbox(f"{target}", ["Y", "N", "NA"])
             response_data[target] = response
 
-    if st.button("Save Cold Probe Data"):
-        st.session_state.session_data["cold_probe"] = response_data
-        st.success("Cold probe data saved!")
+   if st.button("💾 Save Cold Probe Data"):
+    cold_probe_data = {"Date": date}  # Store session date
+    for domain in domains:
+        for target in cold_probe_targets[domain]:
+            key = f"{domain} - {target}"  # Create a unique key
+            cold_probe_data[key] = cold_probe_responses[domain][target]
+
+    save_data_to_csv(cold_probe_data)
 
 # ----------------------------- 3️⃣ TRIAL-BY-TRIAL DATA -----------------------------
 elif section == "Trial-by-Trial Data":
@@ -90,10 +106,14 @@ elif section == "Trial-by-Trial Data":
 
             st.write(f"✅ **Accuracy:** {accuracy_percentage:.2f}%")
 
-    if st.button("Save Trial Data"):
-        st.session_state.session_data["trial_data"] = trial_data
-        st.success("Trial-by-Trial Data Saved!")
+    if st.button("💾 Save Trial Data"):
+    trial_data = {"Date": date}  # Store session date
+    for domain in trial_domains:
+        for target in trial_targets[domain]:
+            key = f"{domain} - {target}"  # Unique key for target
+            trial_data[key] = trial_responses[domain][target]  # Store percentage
 
+    save_data_to_csv(trial_data)
 # ----------------------------- 4️⃣ TASK ANALYSIS -----------------------------
 elif section == "Task Analysis":
     st.title("📌 Task Analysis")
