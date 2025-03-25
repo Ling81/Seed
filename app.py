@@ -101,4 +101,45 @@ elif section == "Behavior Duration":
             duration = (datetime.datetime.now() - st.session_state.start_time).total_seconds()
             st.session_state.total_duration += duration
             st.write(f"🕒 **Episode Duration:** {round(duration, 2)} seconds")
+        else:
+            st.warning("⚠ Start the timer first!")
+
+    st.write(f"**Total Duration of Behavior:** {round(st.session_state.total_duration, 2)} seconds")
+
+# 6️⃣ **Progress & Reports**
+elif section == "Progress & Reports":
+    st.header("📊 Progress & Reports")
+
+    # Retrieve stored session details
+    date = st.session_state.get("date", "N/A")
+    therapist = st.session_state.get("therapist", "N/A")
+    start_time = st.session_state.get("start_time", "N/A")
+    end_time = st.session_state.get("end_time", "N/A")
+
+    # Generate session notes
+    st.subheader("📄 Auto-Generated Session Notes")
+    session_summary = f"""
+    **Date:** {date}  
+    **Therapist:** {therapist}  
+    **Session Time:** {start_time} - {end_time}  
+
+    **Cold Probe Data:** Data not yet stored  
+    **Trial-by-Trial Data:** {len(st.session_state.trial_data)} trials recorded  
+    **Task Analysis Data:** Data not yet stored  
+    **Behavior Duration:** {round(st.session_state.get("total_duration", 0), 2)} seconds  
+    """
+
+    st.text_area("Session Notes", session_summary, height=200)
+    st.download_button("📥 Download Session Notes", session_summary, file_name="session_notes.txt")
+
+    # Generate cumulative graph
+    if not st.session_state.trial_data.empty:
+        st.subheader("📈 Cumulative Progress Graph")
+        fig, ax = plt.subplots()
+        st.session_state.trial_data.plot(kind="line", x="Target", y="Accuracy (%)", ax=ax, marker="o")
+        plt.xticks(rotation=45)
+        plt.ylabel("Accuracy (%)")
+        plt.title("Cumulative Progress Over Time")
+        st.pyplot(fig)
+
 
