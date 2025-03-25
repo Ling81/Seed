@@ -56,23 +56,43 @@ elif section == "Cold Probe Data":
 elif section == "Trial-by-Trial Data":
     st.title("📌 Trial-by-Trial Data")
 
-    target_input = st.text_input("Enter Targets (comma-separated)", placeholder="E.g., Target 1, Target 2, Target 3")
-    targets = [t.strip() for t in target_input.split(",") if t.strip()]
+    # Enter targets (max 10)
+    target_input = st.text_input("Enter up to 10 Targets (comma-separated)", placeholder="E.g., Target 1, Target 2, Target 3")
+    targets = [t.strip() for t in target_input.split(",") if t.strip()][:10]  # Limit to 10 targets
 
     trial_data = {}
+
     if targets:
-        selected_target = st.selectbox("Select Target", targets)
-        responses = [st.selectbox(f"Trial {i+1}", ["+", "p", "-", "I"]) for i in range(5)]
-        correct_trials = responses.count("+") + responses.count("I")
-        accuracy_percentage = (correct_trials / len(responses)) * 100
-        trial_data[selected_target] = {
-            "Responses": responses,
-            "Accuracy": f"{accuracy_percentage:.2f}%"
-        }
+        for target in targets:
+            st.subheader(f"🎯 {target}")
+            
+            responses = []
+            col1, col2 = st.columns(2)
+
+            with col1:
+                for i in range(1, 6):  # First 5 trials
+                    response = st.selectbox(f"Trial {i}", ["+", "p", "-", "I"], key=f"{target}_t{i}")
+                    responses.append(response)
+
+            with col2:
+                for i in range(6, 11):  # Next 5 trials
+                    response = st.selectbox(f"Trial {i}", ["+", "p", "-", "I"], key=f"{target}_t{i}")
+                    responses.append(response)
+
+            # Calculate accuracy
+            correct_trials = responses.count("+") + responses.count("I")
+            accuracy_percentage = (correct_trials / len(responses)) * 100 if responses else 0
+
+            trial_data[target] = {
+                "Responses": responses,
+                "Accuracy": f"{accuracy_percentage:.2f}%"
+            }
+
+            st.write(f"✅ **Accuracy:** {accuracy_percentage:.2f}%")
 
     if st.button("Save Trial Data"):
         st.session_state.session_data["trial_data"] = trial_data
-        st.success("Trial-by-trial data saved!")
+        st.success("Trial-by-Trial Data Saved!")
 
 # ----------------------------- 4️⃣ TASK ANALYSIS -----------------------------
 elif section == "Task Analysis":
