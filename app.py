@@ -65,6 +65,8 @@ elif section == "Cold Probe Data":
 elif section == "Trial-by-Trial Data":
     st.header("🎯 Trial-by-Trial Data")
 
+   # Define domains at the top so they can be used everywhere
+domains = ["Communication", "Social Skills", "Motor Skills"]
     selected_domain = st.selectbox("Select Domain", domains)
     targets = st.text_area("Enter Targets (comma-separated)").split(',')
 
