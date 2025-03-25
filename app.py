@@ -29,60 +29,65 @@ if section == "Session Details":
 elif section == "Cold Probe Data":
     st.title("📌 Cold Probe Data")
 
-    # Define domains
-    domains = ["Language", "Social Skills", "Motor Skills"]
-    selected_domain = st.selectbox("Select Domain", domains)
+    # Therapist enters targets manually
+    target_input = st.text_input("Enter Targets (comma-separated)", placeholder="E.g., Target 1, Target 2, Target 3")
+    targets = [t.strip() for t in target_input.split(",") if t.strip()]
 
-    # Target list for domain
-    targets = ["Target 1", "Target 2", "Target 3"]
-    
-    # Response selection for each target
-    response_data = {}
-    for target in targets:
-        response = st.selectbox(f"{target}", ["Y", "N", "NA"])
-        response_data[target] = response
-    
-    # Display recorded responses
-    st.write("📋 **Recorded Responses:**", response_data)
+    if targets:
+        response_data = {}
+        for target in targets:
+            response = st.selectbox(f"{target}", ["Y", "N", "NA"])
+            response_data[target] = response
+
+        # Display recorded responses
+        st.write("📋 **Recorded Responses:**", response_data)
+    else:
+        st.warning("Please enter at least one target.")
 
 # ----------------------------- 3️⃣ TRIAL-BY-TRIAL DATA -----------------------------
 elif section == "Trial-by-Trial Data":
     st.title("📌 Trial-by-Trial Data")
 
-    # Select domain
-    selected_domain = st.selectbox("Select Domain", domains)
-    
-    # Target selection
-    targets = ["Target 1", "Target 2", "Target 3"]
-    selected_target = st.selectbox("Select Target", targets)
+    # Therapist enters targets manually
+    target_input = st.text_input("Enter Targets (comma-separated)", placeholder="E.g., Target 1, Target 2, Target 3")
+    targets = [t.strip() for t in target_input.split(",") if t.strip()]
 
-    # Trial entry and percentage calculation
-    trial_data = []
-    for trial in range(1, 6):
-        response = st.selectbox(f"Trial {trial}", ["+", "p", "-", "I"])
-        trial_data.append(response)
-    
-    # Calculate percentage of correct responses
-    correct_trials = trial_data.count("+") + trial_data.count("I")
-    accuracy_percentage = (correct_trials / len(trial_data)) * 100
+    if targets:
+        selected_target = st.selectbox("Select Target", targets)
 
-    # Display results
-    st.write(f"🎯 **Accuracy for {selected_target}:** {accuracy_percentage:.2f}%")
+        # Trial entry and percentage calculation
+        trial_data = []
+        for trial in range(1, 6):
+            response = st.selectbox(f"Trial {trial}", ["+", "p", "-", "I"])
+            trial_data.append(response)
+
+        # Calculate percentage of correct responses
+        correct_trials = trial_data.count("+") + trial_data.count("I")
+        accuracy_percentage = (correct_trials / len(trial_data)) * 100
+
+        # Display results
+        st.write(f"🎯 **Accuracy for {selected_target}:** {accuracy_percentage:.2f}%")
+    else:
+        st.warning("Please enter at least one target.")
 
 # ----------------------------- 4️⃣ TASK ANALYSIS -----------------------------
 elif section == "Task Analysis":
     st.title("📌 Task Analysis")
 
-    # Define steps
-    steps = ["Step 1", "Step 2", "Step 3"]
-    step_data = {}
+    # Therapist enters steps manually
+    step_input = st.text_input("Enter Steps (comma-separated)", placeholder="E.g., Step 1, Step 2, Step 3")
+    steps = [s.strip() for s in step_input.split(",") if s.strip()]
 
-    for step in steps:
-        prompt_level = st.selectbox(f"{step}", ["FP", "PP", "MP", "VI", "VP", "GP", "TD", "I"])
-        step_data[step] = prompt_level
+    if steps:
+        step_data = {}
+        for step in steps:
+            prompt_level = st.selectbox(f"{step}", ["FP", "PP", "MP", "VI", "VP", "GP", "TD", "I"])
+            step_data[step] = prompt_level
 
-    # Display recorded steps
-    st.write("📋 **Prompt Levels:**", step_data)
+        # Display recorded steps
+        st.write("📋 **Prompt Levels:**", step_data)
+    else:
+        st.warning("Please enter at least one step.")
 
 # ----------------------------- 5️⃣ BEHAVIOR DURATION TRACKING -----------------------------
 elif section == "Behavior Duration Tracking":
@@ -129,9 +134,9 @@ elif section == "Progress & Reports":
     📌 **Day:** {day_of_session}  
     👩‍⚕️ **Therapist:** {therapist_name}  
 
-    🎯 **Cold Probe Summary:** {response_data}  
-    🔄 **Trial-by-Trial Summary:** Accuracy for {selected_target} = {accuracy_percentage:.2f}%  
-    🛠 **Task Analysis Steps:** {step_data}  
+    🎯 **Cold Probe Summary:** {response_data if 'response_data' in locals() else 'No data'}  
+    🔄 **Trial-by-Trial Summary:** Accuracy for {selected_target if 'selected_target' in locals() else 'N/A'} = {accuracy_percentage:.2f}%  
+    🛠 **Task Analysis Steps:** {step_data if 'step_data' in locals() else 'No data'}  
     ⏳ **Total Behavior Duration:** {st.session_state.total_duration:.2f} sec  
     """
     st.markdown("### 📄 Auto-Generated Session Notes")
