@@ -14,7 +14,14 @@ def save_data_to_csv(data, filename="session_data.csv"):
 
 # Sidebar navigation
 st.sidebar.title("📊 Data Collection Tool")
-menu = st.sidebar.radio("Go to", ["Session Details", "Cold Probe Data", "Trial-by-Trial Data", "Task Analysis", "Behavior Duration Tracking", "Progress & Reports"])
+menu = st.sidebar.radio("Go to", [
+    "Session Details", 
+    "Cold Probe Data", 
+    "Trial-by-Trial Data", 
+    "Task Analysis", 
+    "Behavior Duration Tracking", 
+    "Progress & Reports"
+])
 
 # 1️⃣ Session Details
 if menu == "Session Details":
@@ -47,15 +54,12 @@ elif menu == "Cold Probe Data":
     st.header("🧊 Cold Probe Data")
 
     targets = st.text_input("Enter targets (comma-separated)").split(',')
-
     response_options = ["Y", "N", "NA"]
     response_data = {}
 
-    for domain in domains:
-        st.subheader(f"📂 {domain.strip()}")
-        for target in targets:
-            response = st.selectbox(f"{target.strip()}", response_options, key=f"{domain}_{target}")
-            response_data[target] = response
+    for target in targets:
+        response = st.selectbox(f"{target.strip()}", response_options, key=target)
+        response_data[target] = response
 
     if st.button("💾 Save Cold Probe Data"):
         save_data_to_csv(response_data)
@@ -63,20 +67,17 @@ elif menu == "Cold Probe Data":
 # 3️⃣ Trial-by-Trial Data
 elif menu == "Trial-by-Trial Data":
     st.header("🎯 Trial-by-Trial Data")
-    
-    targets = st.text_input("Enter up to 10 targets (comma-separated)").split(',')
 
+    targets = st.text_input("Enter up to 10 targets (comma-separated)").split(',')
     trial_options = ["+", "p", "-", "I"]
     trial_data = {}
 
-    for domain in domains:
-        st.subheader(f"📂 {domain.strip()}")
-        for target in targets[:10]:  # Limit to 10 targets
-            trials = []
-            for i in range(10):  # 10 trials per target
-                trial = st.selectbox(f"{target.strip()} - Trial {i+1}", trial_options, key=f"{domain}_{target}_T{i}")
-                trials.append(trial)
-            trial_data[target] = trials
+    for target in targets[:10]:  # Limit to 10 targets
+        trials = []
+        for i in range(10):  # 10 trials per target
+            trial = st.selectbox(f"{target.strip()} - Trial {i+1}", trial_options, key=f"{target}_T{i}")
+            trials.append(trial)
+        trial_data[target] = trials
 
     if st.button("💾 Save Trial-by-Trial Data"):
         save_data_to_csv(trial_data)
@@ -86,7 +87,6 @@ elif menu == "Task Analysis":
     st.header("📋 Task Analysis")
 
     steps = st.text_input("Enter task steps (comma-separated)").split(',')
-
     prompt_levels = ["FP", "PP", "MP", "VI", "VP", "GP", "TD", "I"]
     task_data = {}
 
