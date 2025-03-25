@@ -149,4 +149,32 @@ elif section == "Progress & Reports":
     ax.set_ylabel("Score (%)")
     ax.grid(True)
 
+import pandas as pd
+import io
+
+# Function to convert session data to a downloadable Excel file
+def export_to_excel(data):
+    output = io.BytesIO()  # Create a buffer
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        for key, value in data.items():
+            if isinstance(value, dict):  # Convert dictionaries into DataFrame
+                df = pd.DataFrame.from_dict(value, orient="index")
+            else:
+                df = pd.DataFrame([value])  # Convert other data into DataFrame
+            
+            df.to_excel(writer, sheet_name=key[:31])  # Sheet name max length = 31
+
+    output.seek(0)
+    return output
+
+# Button to trigger export
+if st.button("📤 Export Data to Excel"):
+    if "session_data" in st.session_state and st.session_state.session_data:
+        excel_data = export_to_excel(st.session_state.session_data)
+        st.download_button(label="📥 Download Excel File",
+                           data=excel_data,
+                           file_name="session_data.xlsx",
+                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    else:
+        st.warning("No data available to export.")
 
