@@ -37,13 +37,13 @@ if section == "Session Details":
     day_of_session = st.selectbox("Day of Session", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])
     therapist_name = st.text_input("Therapist Name", placeholder="Enter your name")
 
-  if st.button("Save Session Details"):
+if st.button("💾 Save Session Details"):
     session_data = {
         "Date": date,
         "Time Start": start_time,
         "Time End": end_time,
         "Therapist": therapist_name,
-    
+    }
     save_data_to_csv(session_data)
 
 # ----------------------------- 2️⃣ COLD PROBE DATA -----------------------------
