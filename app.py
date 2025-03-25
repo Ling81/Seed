@@ -46,7 +46,6 @@ if menu == "Session Details":
 elif menu == "Cold Probe Data":
     st.header("🧊 Cold Probe Data")
 
-    domains = st.text_input("Enter domains (comma-separated)").split(',')
     targets = st.text_input("Enter targets (comma-separated)").split(',')
 
     response_options = ["Y", "N", "NA"]
@@ -64,8 +63,7 @@ elif menu == "Cold Probe Data":
 # 3️⃣ Trial-by-Trial Data
 elif menu == "Trial-by-Trial Data":
     st.header("🎯 Trial-by-Trial Data")
-
-    domains = st.text_input("Enter domains (comma-separated)").split(',')
+    
     targets = st.text_input("Enter up to 10 targets (comma-separated)").split(',')
 
     trial_options = ["+", "p", "-", "I"]
