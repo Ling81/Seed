@@ -152,8 +152,3 @@ elif menu == "Progress & Reports":
     except:
         st.error("No data found! Ensure the learner name is correct and data has been saved.")
 
-
-
-    except:
-        st.error("No data found! Ensure the learner name is correct and data has been saved.")
-
