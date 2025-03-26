@@ -1,179 +1,154 @@
 import streamlit as st
 import pandas as pd
+import gspread
 import os
 import matplotlib.pyplot as plt
+from oauth2client.service_account import ServiceAccountCredentials
 
-# Function to save data to CSV
-def save_data_to_csv(data, filename="session_data.csv"):
-    df = pd.DataFrame([data])  # Convert dictionary to DataFrame
-    if os.path.exists(filename):
-        df.to_csv(filename, mode='a', header=False, index=False)  # Append data
-    else:
-        df.to_csv(filename, mode='w', header=True, index=False)  # Create new file
-    st.success("✅ Data saved successfully!")
+# ------------------- GOOGLE SHEETS AUTHENTICATION -------------------
+def authenticate_google_sheets():
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_name("google_credentials.json", scope)
+    client = gspread.authorize(creds)
+    return client
 
-# Sidebar navigation
-st.sidebar.title("📊 Data Collection Tool")
-menu = st.sidebar.radio("Go to", [
-    "Session Details", 
-    "Cold Probe Data", 
-    "Trial-by-Trial Data", 
-    "Task Analysis", 
-    "Behavior Duration Tracking", 
-    "Progress & Reports"
-])
+# ------------------- FUNCTION TO SAVE DATA TO GOOGLE SHEETS -------------------
+def save_data_to_google_sheets(data, learner_name):
+    client = authenticate_google_sheets()
+    
+    # Link to specific learner's Google Sheet (replace with your actual sheet name)
+    sheet_name = f"{learner_name}_Data"
+    try:
+        sheet = client.open(sheet_name).sheet1  # Open the first sheet
+    except gspread.exceptions.SpreadsheetNotFound:
+        st.error(f"Google Sheet '{sheet_name}' not found. Ensure the sheet is created and shared with your service account.")
+        return
 
-# 1️⃣ Session Details
+    row = list(data.values())
+    sheet.append_row(row)
+    st.success(f"✅ Data saved to Google Sheets: {sheet_name}")
+
+# ------------------- SESSION DETAILS -------------------
+st.sidebar.title("📋 Navigation")
+menu = st.sidebar.radio("Go to", ["Session Details", "Cold Probe Data", "Trial-by-Trial Data", "Task Analysis", "Behavior Duration", "Progress & Reports"])
+
 if menu == "Session Details":
-    st.header("📝 Session Details")
+    st.header("📅 Session Details")
+    
+    # Inputs for session details
+    date = st.date_input("Select Date")
+    start_time = st.selectbox("Start Time", [f"{h}:00" for h in range(9, 18)])  # 9 AM - 5 PM
+    end_time = st.selectbox("End Time", [f"{h}:00" for h in range(9, 18)])  
+    therapist_name = st.text_input("Therapist's Name")
+    learner_name = st.text_input("Learner's Name (Used for Google Sheet)")
 
-    date = st.date_input("Date", value=pd.Timestamp.today().date())
-    therapist_name = st.text_input("Therapist’s Name")
-
-    # Time slots from 9:00 AM to 5:30 PM
-    time_slots = [f"{h}:{m:02d} {'AM' if h < 12 else 'PM'}" for h in range(9, 18) for m in (0, 30)]
-    start_time = st.selectbox("Start Time", time_slots, index=0)
-    end_time = st.selectbox("End Time", time_slots, index=len(time_slots) - 1)
-
+    # Save button
     if st.button("💾 Save Session Details"):
         session_data = {
             "Date": date,
             "Start Time": start_time,
             "End Time": end_time,
-            "Therapist": therapist_name
+            "Therapist": therapist_name,
+            "Learner": learner_name
         }
-        save_data_to_csv(session_data)
+        save_data_to_google_sheets(session_data, learner_name)
 
-# 2️⃣ Cold Probe Data
+# ------------------- COLD PROBE DATA -------------------
 elif menu == "Cold Probe Data":
-    st.header("🧊 Cold Probe Data")
+    st.header("📊 Cold Probe Data")
 
-    targets = st.text_input("Enter targets (comma-separated)").split(',')
-    response_options = ["Y", "N", "NA"]
-    response_data = {}
+    targets = st.text_area("Enter targets (comma-separated)").split(",")
 
-    for target in targets:
-        response = st.selectbox(f"{target.strip()}", response_options, key=target)
-        response_data[target] = response
+    if targets:
+        df = pd.DataFrame({"Target": targets, "Response": [""] * len(targets)})
+        response_options = ["Y", "N", "NA"]
+        for i in range(len(df)):
+            df.at[i, "Response"] = st.selectbox(f"Response for {df.at[i, 'Target']}", response_options)
 
-    if st.button("💾 Save Cold Probe Data"):
-        save_data_to_csv(response_data)
+        if st.button("💾 Save Cold Probe Data"):
+            save_data_to_google_sheets(df.to_dict(), learner_name)
 
-# 3️⃣ Trial-by-Trial Data (Improved Layout)
+# ------------------- TRIAL-BY-TRIAL DATA -------------------
 elif menu == "Trial-by-Trial Data":
     st.header("🎯 Trial-by-Trial Data")
 
-    targets = st.text_input("Enter up to 10 targets (comma-separated)").split(',')
-    trial_options = ["+", "p", "-", "I"]
-    trial_data = {}
+    targets = st.text_area("Enter up to 10 targets (comma-separated)").split(",")[:10]
 
-    if len(targets) > 10:
-        st.warning("⚠ Only the first 10 targets will be used.")
+    if targets:
+        trial_data = {}
+        for target in targets:
+            st.subheader(target.strip())
+            trials = [st.selectbox(f"Trial {i+1}", ["+", "p", "-", "I"], key=f"{target}_{i}") for i in range(10)]
+            trial_data[target.strip()] = trials
 
-    trial_results = []
+        # Convert responses to percentage
+        trial_results = {}
+        for target, trials in trial_data.items():
+            correct_count = trials.count("+") + trials.count("I")
+            trial_results[target] = round((correct_count / 10) * 100, 2)  # Convert to %
 
-    # Display the trial data in a structured table
-    col1, col2 = st.columns([1, 3])
-    col1.write("**Target**")
-    col2.write("**Trials**")
+        if st.button("💾 Save Trial Data"):
+            save_data_to_google_sheets(trial_results, learner_name)
 
-    for target in targets[:10]:  # Limit to 10 targets
-        trial_row = []
-        col1, col2 = st.columns([1, 3])
-        col1.write(target.strip())
-
-        for i in range(10):  # 10 trials per target
-            trial = col2.selectbox(f"Trial {i+1} for {target.strip()}", trial_options, key=f"{target}_T{i}")
-            trial_row.append(trial)
-
-        trial_data[target] = trial_row
-
-        # Calculate percentage of correct responses
-        correct_count = sum(1 for t in trial_row if t == "+")
-        total_trials = len(trial_row)
-        percentage = (correct_count / total_trials) * 100 if total_trials > 0 else 0
-        trial_results.append({"Target": target.strip(), "Correct %": percentage})
-
-    # Show percentage summary
-    df_results = pd.DataFrame(trial_results)
-    st.table(df_results)
-
-    if st.button("💾 Save Trial-by-Trial Data"):
-        save_data_to_csv(trial_data)
-
-# 4️⃣ Task Analysis
+# ------------------- TASK ANALYSIS -------------------
 elif menu == "Task Analysis":
-    st.header("📋 Task Analysis")
+    st.header("📌 Task Analysis")
 
-    steps = st.text_input("Enter task steps (comma-separated)").split(',')
-    prompt_levels = ["FP", "PP", "MP", "VI", "VP", "GP", "TD", "I"]
-    task_data = {}
+    steps = st.text_area("Enter steps (comma-separated)").split(",")
+    
+    if steps:
+        df = pd.DataFrame({"Step": steps, "Prompt Level": [""] * len(steps)})
+        prompt_options = ["FP", "PP", "MP", "VI", "VP", "GP", "TD", "I"]
+        for i in range(len(df)):
+            df.at[i, "Prompt Level"] = st.selectbox(f"Prompt for {df.at[i, 'Step']}", prompt_options)
+        
+        if st.button("💾 Save Task Analysis Data"):
+            save_data_to_google_sheets(df.to_dict(), learner_name)
 
-    for step in steps:
-        prompt = st.selectbox(f"Prompt Level for {step.strip()}", prompt_levels, key=step)
-        task_data[step] = prompt
-
-    if st.button("💾 Save Task Analysis Data"):
-        save_data_to_csv(task_data)
-
-# 5️⃣ Behavior Duration Tracking
-elif menu == "Behavior Duration Tracking":
+# ------------------- BEHAVIOR DURATION TRACKING -------------------
+elif menu == "Behavior Duration":
     st.header("⏳ Behavior Duration Tracking")
 
-    if "start_time" not in st.session_state:
-        st.session_state["start_time"] = None
-    if "duration_list" not in st.session_state:
-        st.session_state["duration_list"] = []
-
+    duration_list = []
     if st.button("▶ Start Timer"):
-        st.session_state["start_time"] = pd.Timestamp.now()
-        st.success("Timer Started!")
+        start_time = pd.Timestamp.now()
+        st.session_state["start_time"] = start_time
 
     if st.button("⏹ Stop Timer"):
-        if st.session_state["start_time"]:
+        if "start_time" in st.session_state:
             duration = (pd.Timestamp.now() - st.session_state["start_time"]).seconds
-            st.session_state["duration_list"].append(duration)
-            st.session_state["start_time"] = None
-            st.success(f"🕒 Episode Duration: {duration} seconds")
+            duration_list.append(duration)
+            st.success(f"Recorded episode duration: {duration} seconds")
 
-    total_duration = sum(st.session_state["duration_list"])
-    st.write(f"📊 **Total Duration Tracked:** {total_duration} seconds")
+    if st.button("💾 Save Behavior Duration Data"):
+        total_duration = sum(duration_list)
+        save_data_to_google_sheets({"Total Duration (s)": total_duration}, learner_name)
 
-    if st.button("💾 Save Behavior Duration"):
-        save_data_to_csv({"Total Duration (s)": total_duration})
-
-# 6️⃣ Progress & Reports
+# ------------------- PROGRESS & REPORTS -------------------
 elif menu == "Progress & Reports":
     st.header("📈 Progress & Reports")
 
-    # Load saved data if available
-    if os.path.exists("session_data.csv"):
-        df = pd.read_csv("session_data.csv")
-        st.write("📋 **Session Data Overview**")
-        st.dataframe(df)
+    client = authenticate_google_sheets()
+    try:
+        sheet = client.open(f"{learner_name}_Data").sheet1
+        data = pd.DataFrame(sheet.get_all_records())
 
-        # Generate cumulative graph
-        if "Date" in df.columns and "Total Duration (s)" in df.columns:
-            df["Date"] = pd.to_datetime(df["Date"])
-            df = df.sort_values("Date")
-            plt.figure(figsize=(10, 5))
-            plt.plot(df["Date"], df["Total Duration (s)"].cumsum(), marker="o", linestyle="-", color="b")
+        if not data.empty:
+            fig, ax = plt.subplots(figsize=(8, 4))
+            data.plot(kind="line", x="Date", y=[col for col in data.columns if "%" in col], ax=ax)
+            plt.title("Cumulative Progress Over Time")
             plt.xlabel("Date")
-            plt.ylabel("Cumulative Duration (s)")
-            plt.title("📈 Cumulative Graph: Behavior Duration Over Time")
-            plt.grid()
-            st.pyplot(plt)
+            plt.ylabel("Performance (%)")
+            st.pyplot(fig)
 
-    # Auto-Generated Session Notes
-    if st.button("📄 Generate Session Notes"):
-        if "Date" in df.columns and "Therapist" in df.columns:
-            latest_session = df.iloc[-1]  # Get the latest session
-            session_notes = f"""
-            ## 📄 Auto-Generated Session Notes
-            **Date:** {latest_session['Date']}
-            **Therapist:** {latest_session['Therapist']}
-            **Start Time:** {latest_session['Start Time']}
-            **End Time:** {latest_session['End Time']}
-            **Total Duration Tracked:** {latest_session.get('Total Duration (s)', 'N/A')} seconds
+            st.subheader("📄 Auto-Generated Session Notes")
+            session_summary = f"""
+            **Date:** {data.iloc[-1]['Date']}
+            **Therapist:** {data.iloc[-1]['Therapist']}
+            **Learner:** {learner_name}
+            **Performance Summary:** {data.iloc[-1].to_dict()}
             """
-            st.markdown(session_notes)
+            st.text_area("Session Notes", session_summary, height=200)
+    except:
+        st.error("No data found! Ensure the learner name is correct and data has been saved.")
+
